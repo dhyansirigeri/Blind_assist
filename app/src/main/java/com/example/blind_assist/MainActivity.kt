@@ -132,11 +132,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             val detection = results[0]
-            val label = detection.categories[0].label
+            val label = detection.categories[0].label.lowercase()
 
             val box = detection.boundingBox
             val centerX = box.centerX()
-
             val width = bitmap.width
 
             val position = when {
@@ -154,6 +153,39 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 else -> 3.0
             }
 
+            // Detect door
+            if (label.contains("door")) {
+
+                if (distanceMeters <= 1.0) {
+                    speak("Closed door ahead. Stop or turn back")
+                    vibrateStrong()
+                } else {
+                    speak("Door ahead $distanceMeters meters")
+                }
+
+                runOnUiThread {
+                    statusText.text = "Door ahead"
+                }
+
+                lastSpeakTime = currentTime
+                return
+            }
+
+            // Detect wall (large object filling screen)
+            if (box.width() > bitmap.width * 0.8) {
+
+                speak("Wall ahead. Stop and turn")
+
+                vibrateStrong()
+
+                runOnUiThread {
+                    statusText.text = "Wall ahead"
+                }
+
+                lastSpeakTime = currentTime
+                return
+            }
+
             runOnUiThread {
                 statusText.text = "$label $position $distanceMeters m"
             }
@@ -168,9 +200,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                 when (position) {
 
-                    "left" -> speak("$label left $distanceMeters meters, move slightly right")
+                    "left" -> speak("$label left $distanceMeters meters, move right")
 
-                    "right" -> speak("$label right $distanceMeters meters, move slightly left")
+                    "right" -> speak("$label right $distanceMeters meters, move left")
 
                     "ahead" -> speak("$label ahead $distanceMeters meters")
 
@@ -219,9 +251,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun speak(text: String) {
-
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-
     }
 
     private fun vibrateStrong() {
