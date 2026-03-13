@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.tts.TextToSpeech
+import android.util.Size
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -49,7 +50,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val options = ObjectDetectorOptions.builder()
             .setMaxResults(3)
-            .setScoreThreshold(0.5f)
+            .setScoreThreshold(0.35f)   // lowered threshold for APK stability
             .build()
 
         objectDetector = ObjectDetector.createFromFileAndOptions(
@@ -85,6 +86,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             preview.setSurfaceProvider(previewView.surfaceProvider)
 
             val imageAnalyzer = ImageAnalysis.Builder()
+                .setTargetResolution(Size(1280,720)) // fixed resolution
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
@@ -111,7 +113,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val currentTime = System.currentTimeMillis()
 
-        if (currentTime - lastSpeakTime > 3000) {
+        if (currentTime - lastSpeakTime > 2000) {
 
             val bitmap = imageProxyToBitmap(imageProxy)
 
@@ -125,7 +127,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     statusText.text = "Path clear"
                 }
 
-                speak("Path clear, walk forward")
+                speak("Path clear. Walk forward")
 
                 lastSpeakTime = currentTime
                 return
@@ -136,6 +138,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             val box = detection.boundingBox
             val centerX = box.centerX()
+
             val width = bitmap.width
 
             val position = when {
@@ -151,39 +154,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 boxWidth > 400 -> 1.0
                 boxWidth > 250 -> 2.0
                 else -> 3.0
-            }
-
-            // Detect door
-            if (label.contains("door")) {
-
-                if (distanceMeters <= 1.0) {
-                    speak("Closed door ahead. Stop or turn back")
-                    vibrateStrong()
-                } else {
-                    speak("Door ahead $distanceMeters meters")
-                }
-
-                runOnUiThread {
-                    statusText.text = "Door ahead"
-                }
-
-                lastSpeakTime = currentTime
-                return
-            }
-
-            // Detect wall (large object filling screen)
-            if (box.width() > bitmap.width * 0.8) {
-
-                speak("Wall ahead. Stop and turn")
-
-                vibrateStrong()
-
-                runOnUiThread {
-                    statusText.text = "Wall ahead"
-                }
-
-                lastSpeakTime = currentTime
-                return
             }
 
             runOnUiThread {

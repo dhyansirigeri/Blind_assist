@@ -7,6 +7,11 @@ android {
     namespace = "com.example.blind_assist"
     compileSdk = 34
 
+    // Prevent TensorFlow model compression
+    androidResources {
+        noCompress += "tflite"
+    }
+
     defaultConfig {
         applicationId = "com.example.blind_assist"
         minSdk = 24
@@ -20,6 +25,8 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -55,10 +62,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // TensorFlow Lite (stable versions)
-    // TensorFlow Lite (only this dependency)
+    // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.3")
-
 
     implementation("androidx.appcompat:appcompat:1.6.1")
 
